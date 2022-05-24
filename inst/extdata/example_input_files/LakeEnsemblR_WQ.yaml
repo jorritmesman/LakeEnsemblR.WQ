@@ -53,13 +53,29 @@ phytoplankton:
 zooplankton:
    use: false
    groups:
-      zooplankton:
+      daphnia:
          par_file: zooplankton.csv
+         prey:
+         - phytoplankton/diatoms
+         - phytoplankton/cyanobacteria
+         - phytoplankton/some_random_group
+      mesozoo:
+         par_file: WQ input files/zooplankton.csv
+         prey:
+         - phytoplankton/diatoms
 fish: 
    use: false
    groups:
       benthivores:
-         par_file: fish.csv
+         par_file: WQ input files/fish.csv
+         prey:
+         - zooplankton/daphnia
+         - zooplankton/mesozoo
+      piscivores:
+         par_file: WQ input files/fish.csv
+         prey:
+         - zooplankton/daphnia
+         - fish/benthivores
 macrophytes:
    use: false
    groups:

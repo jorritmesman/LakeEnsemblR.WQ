@@ -36,6 +36,9 @@ export_config <- function(config_file, folder = ".", verbose = FALSE,
   # of groups for phytoplankton etc., and default values.
   set_up_configs(config_file, folder = folder)
   
+  # Export user food-web settings to the configuration files
+  foodweb_settings <- export_food_web_interactions(config_file, folder = folder)
+  
   # Set PCLake physical settings
   if("PCLake" %in% lst_config[["models"]]){
     export_pclake_physics(config_file, folder = folder,
@@ -87,5 +90,5 @@ export_config <- function(config_file, folder = ".", verbose = FALSE,
     }
   }
   
-  set_coupling(config_file, folder = folder)
+  set_coupling(config_file, folder = folder, foodweb_settings = foodweb_settings)
 }

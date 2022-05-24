@@ -9,11 +9,13 @@
 #'
 #'@importFrom configr read.config write.config
 #'@importFrom glmtools read_nml write_nml
+#'@importFrom LakeEnsemblR get_yaml_multiple
 #'
 #'@export
 
 
-set_coupling <- function(config_file, folder){
+set_coupling <- function(config_file, folder,
+                         foodweb_settings = NULL){
   
   # Read config file as a list
   lst_config <- read.config(file.path(folder, config_file)) 
@@ -63,9 +65,14 @@ set_coupling <- function(config_file, folder){
                            dd_n = "selmaprotbas/dd_n",
                            dd_si = "selmaprotbas/dd_si")
           
-          # Coupling to prey. Not implemented yet. Should be
-          # specified in the input. Default predation on all phytoplankton?
-          # Also setting prey nutrient ratios
+          # Coupling to prey
+          # Automatic correction for the nutrient ratios in the prey not yet implemented
+          if(!is.null(foodweb_settings)){
+            for(k in seq_len(length(foodweb_settings$zooplankton_prey[[j]]))){
+              phyto_name <- gsub("phytoplankton/", "", foodweb_settings$zooplankton_prey[[j]][k])
+              coupling[[paste0("prey", k)]] <- paste0(phyto_name, "/c")
+            }
+          }
         }
         
         if(exists("coupling")){
@@ -199,7 +206,13 @@ set_coupling <- function(config_file, folder){
                            SiO2_pool_water = "abiotic_water/sSiO2W",
                            oxygen_pool_water = "abiotic_water/sO2W")
           
-          # Prey not yet implemented
+          # Coupling to prey
+          if(!is.null(foodweb_settings)){
+            for(k in seq_len(length(foodweb_settings$zooplankton_prey[[j]]))){
+              phyto_name <- gsub("phytoplankton/", "", foodweb_settings$zooplankton_prey[[j]][k])
+              coupling[[paste0("prey_model", k)]] <- phyto_name
+            }
+          }
         }else if(wet_model == "wet/zoobenthos"){
           coupling <- list(POM_DW_pool_sediment = "abiotic_sediment/sDPOMS",
                            POM_P_pool_sediment = "abiotic_sediment/sPPOMS",
@@ -213,7 +226,13 @@ set_coupling <- function(config_file, folder){
                            DOM_P_pool_sediment = "abiotic_sediment/sPDOMS",
                            SiO2_pool_sediment = "abiotic_sediment/sSiO2S")
           
-          # Prey not yet implemented
+          # Coupling to prey
+          if(!is.null(foodweb_settings)){
+            for(k in seq_len(length(foodweb_settings$zoobenthos_prey[[j]]))){
+              phyto_name <- gsub("phytoplankton/", "", foodweb_settings$zoobenthos_prey[[j]][k])
+              coupling[[paste0("prey_model", k)]] <- phyto_name
+            }
+          }
         }else if(wet_model == "wet/fish_mod"){
           
           coupling <- list(POM_DW_pool_water = "abiotic_water/sDPOMW",
@@ -226,7 +245,23 @@ set_coupling <- function(config_file, folder){
                            DOM_P_pool_water = "abiotic_water/sPDOMW",
                            oxygen_pool_water = "abiotic_water/sO2W")
           
-          # Predation and life stages not yet implemented
+          # Coupling to prey
+          if(!is.null(foodweb_settings)){
+            prey_zoop <- foodweb_settings$fish_prey[[j]][grepl("zooplankton/", foodweb_settings$fish_prey[[j]])]
+            prey_zoob <- foodweb_settings$fish_prey[[j]][grepl("zoobenthos/", foodweb_settings$fish_prey[[j]])]
+            prey_fish <- foodweb_settings$fish_prey[[j]][grepl("fish/", foodweb_settings$fish_prey[[j]])]
+            for(k in seq_len(length(prey_zoop))){
+              coupling[[paste0("ZOOprey", k)]] <- strsplit(prey_zoop[k], "/")[[1L]][2L]
+            }
+            for(k in seq_len(length(prey_zoob))){
+              coupling[[paste0("BENprey", k)]] <- strsplit(prey_zoob[k], "/")[[1L]][2L]
+            }
+            for(k in seq_len(length(prey_fish))){
+              coupling[[paste0("PISCprey", k)]] <- strsplit(prey_fish[k], "/")[[1L]][2L]
+            }
+          }
+          
+          # Life stages not yet implemented
         }
         if(exists("coupling")){
           wq_config[["instances"]][[j]][["coupling"]] <- coupling
@@ -281,8 +316,8 @@ set_coupling <- function(config_file, folder){
           wq_config[[j]]["do_uptake_target_variable"] <- "OXY_oxy"
           wq_config[[j]]["c_uptake_target_variable"] <- "CAR_dic"
           wq_config[[j]]["dbase"] <- "aed2_phyto_pars.nml"
-        }else if(j == "aed2_phytoplankton"){
-          wq_config[[j]]["dbase"] <- "aed2_phyto_pars.nml"
+        }else if(j == "aed2_zoooplankton"){
+          wq_config[[j]]["dbase"] <- "aed2_zoop_pars.nml"
           wq_config[[j]]["dn_target_variable"] <- "OGM_don"
           wq_config[[j]]["dn_target_variable"] <- "OGM_don"
           wq_config[[j]]["pn_target_variable"] <- "OGM_pon"

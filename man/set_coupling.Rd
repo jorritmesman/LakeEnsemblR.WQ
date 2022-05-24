@@ -4,7 +4,7 @@
 \alias{set_coupling}
 \title{Set coupling settings for each model}
 \usage{
-set_coupling(config_file, folder)
+set_coupling(config_file, folder, foodweb_settings = NULL)
 }
 \arguments{
 \item{config_file}{character; name of LakeEnsemblR_WQ config file}

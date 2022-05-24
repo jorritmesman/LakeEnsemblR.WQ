@@ -365,7 +365,9 @@ chk_names_nutr_flow <- function(headers){
 #' @param yml list; yaml file in list format, as read by configr
 #' @param filepath character; path to file location
 #' @param is_gotm_yaml logical; if unspecified, it try to detect gotm.yaml
-#' @noRd
+#' 
+#' @export
+
 lerwq_write_yaml_file <- function(yml, filepath, is_gotm_yaml = NULL){
   # Method is very cumbersome, hence the separate function
   
@@ -444,4 +446,91 @@ set_pclake_r <- function(file, par_list,
   }
   
   return(file)
+}
+
+#'Checks the foodweb settings
+#'@description
+#'Checks whether the format of the foodweb settings is correct and
+#' whether the specified prey is present
+#'
+#'@param phy_gr character; phytoplankton groups
+#'@param zoop_gr character; phytoplankton groups
+#'@param zoob_gr character; phytoplankton groups
+#'@param fish_gr character; phytoplankton groups
+#'@param zoop_pr character; phytoplankton groups
+#'@param zoob_pr character; phytoplankton groups
+#'@param fish_pr character; phytoplankton groups
+#'
+#'@examples
+#'
+#'@export
+
+quality_check_food_web <- function(phy_gr, zoop_gr, zoob_gr, fish_gr, zoop_pr, zoob_pr,
+                                   fish_pr){
+  
+  if((length(zoop_gr) > 0L & any(sapply(zoop_pr, is.null))) |
+    (length(zoob_gr) > 0L & any(sapply(zoob_pr, is.null))) |
+    (length(fish_gr) > 0L & any(sapply(fish_pr, is.null)))){
+      warning("In the foodweb settings, you seem to have some ",
+              "groups that do not predate on anything. Is that ",
+              "intended? You can specify prey in the config file ",
+              "as a list:\n",
+              "group_name -> prey -> - module_name/group_name")
+  }
+  
+  if(any(duplicated(c(phy_gr, zoop_gr, zoob_gr, fish_gr)))){
+    stop("Names of phytoplankton, zooplankton, zoobenthos, and fish ",
+         "groups must be unique!")
+  }
+  
+  failed_reads <- NULL
+  
+  prey_dict <- list(phytoplankton = phy_gr,
+                   zooplankton = zoop_gr,
+                   zoobenthos = zoob_gr,
+                   fish = fish_gr)
+  
+  for(i in c("zoop_pr", "zoob_pr", "fish_pr")){
+    if(i == "zoop_pr"){
+      allowed_groups <- "phytoplankton"
+    }else if(i == "zoob_pr"){
+      allowed_groups <- "phytoplankton"
+    }else if(i == "fish_pr"){
+      allowed_groups <- c("zooplankton", "zoobenthos", "fish")
+    }
+    
+    lst_preys <- get(i)
+    for(j in names(lst_preys)){
+      for(k in lst_preys[[j]]){
+        prey_parts = strsplit(k, "/")[[1L]]
+        if(length(prey_parts) != 2L){
+          failed_reads <- c(failed_reads,
+                            paste("NoModuleAndGroupSeparatedBySlash",
+                                  i, j, k, sep = "_"))
+          next
+        }
+        
+        if(!(prey_parts[1L] %in% allowed_groups)){
+          failed_reads <- c(failed_reads,
+                            paste("PredationOnUnallowedGroup",
+                                  i, j, k, sep = "_"))
+          next
+        }
+        
+        if(!(prey_parts[2L] %in% prey_dict[[prey_parts[1L]]])){
+          failed_reads <- c(failed_reads,
+                            paste("ThisGroupDoesNotExist",
+                                  i, j, k, sep = "_"))
+        }
+      }
+    }
+  }
+  
+  if(is.null(failed_reads)){
+    return()
+  }else{
+    stop("Something is wrong with the foodweb settings. See ",
+         "the following problems:\n",
+         paste(failed_reads, collapse = "\n"))
+  }
 }
